@@ -1,0 +1,184 @@
+
+#include <WiFi.h> 
+#include <Wire.h>
+#include <Adafruit_BMP085.h>
+
+#include <Arduino.h>
+#include <OLED_SSD1306_Chart.h>
+#include <Adafruit_I2CDevice.h> //Include this to avoid compile errors in Platformio
+
+int z=0;
+
+Adafruit_BMP085 bmp;
+//const char* ssid = "Ty"; 
+//const char* password = "123456789::";
+//WiFiServer server(80);
+
+//String header;
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+#define OLED_RESET -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+
+#define BAUDRATE 9600
+
+#define SDA_PIN D1
+#define SCL_PIN D2
+
+OLED_SSD1306_Chart display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+char actualThickness;
+
+void setup()
+{
+
+
+Serial.begin(9600);
+if (!bmp.begin()) 
+{
+Serial.println("Not connected with BMP180/BMP085 sensor, check connections ");
+while (1) {}
+}
+
+//Serial.print("Connecting to Wifi Network");
+//Serial.println(ssid);
+//WiFi.begin(ssid, password);
+//while (WiFi.status() != WL_CONNECTED) {
+//delay(500);
+//Serial.print(".");
+//}
+//Serial.println("");
+//Serial.println("Successfully connected to WiFi.");
+//Serial.println("IP address of ESP32 is : ");
+//Serial.println(WiFi.localIP());
+//server.begin();
+//Serial.println("Server started");
+
+  
+// put your setup code here, to run once:
+#if defined ESP8266
+  Wire.begin(SDA_PIN, SCL_PIN);
+#else
+  Wire.begin();
+#endif
+
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3c);
+  display.clearDisplay();
+  display.setChartCoordinates(0, 60);      //Chart lower left coordinates (X, Y)
+  display.setChartWidthAndHeight(123, 55); //Chart width = 123 and height = 60
+  display.setXIncrement(5);                //Distance between Y points will be 5px
+  display.setYLimits(99800, 99999);             //Ymin = 0 and Ymax = 100
+  display.setYLimitLabels("T", "P");    //Setting Y axis labels
+  display.setYLabelsVisible(true);
+  display.setAxisDivisionsInc(12, 6);    //Each 12 px a division will be painted in X axis and each 6px in Y axis
+  display.setPlotMode(SINGLE_PLOT_MODE); //Set single plot mode
+  // display.setPointGeometry(POINT_GEOMETRY_CIRCLE);
+  actualThickness = NORMAL_LINE;
+  display.setLineThickness(actualThickness);
+  display.drawChart(); //Update the buffer to draw the cartesian chart
+  display.display();
+}
+
+void loop()
+{
+
+  z=bmp.readPressure();
+//Serial.println("bmp is");
+//Serial.println(z);
+Serial.print("Temp = ");
+Serial.print(bmp.readTemperature());
+Serial.println(" *C");
+
+Serial.print("Pressure = ");
+Serial.print(bmp.readPressure());
+Serial.println(" Pa");
+delay(100);
+
+Serial.print("Altitude = ");
+Serial.print(bmp.readAltitude());
+Serial.println(" meters");
+//Serial.println(WiFi.localIP());
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  // put your main code here, to run repeatedly:
+  auto value =   bmp.readPressure() ;         //random(49666);
+  Serial.println(value);
+  if (!display.updateChart(value)) //Value between Ymin and Ymax will be added to chart
+  {
+    display.clearDisplay(); //If chart is full, it is drawn again
+    if (actualThickness == NORMAL_LINE)
+    {
+      actualThickness = LIGHT_LINE;
+    }
+    else if (actualThickness == LIGHT_LINE)
+    {
+      actualThickness = NORMAL_LINE;
+    }
+    display.setLineThickness(actualThickness);
+    display.drawChart();
+  }
+  delay(100);
+}
+
+
+
+
+
+
+
+
+//Serial.println();
+//delay(500);
+//WiFiClient client = server.available();
+
+//if (client) 
+//{ 
+//Serial.println("Web Client connected ");
+//String request = client.readStringUntil('\r'); 
+//client.println("HTTP/1.1 200 OK");
+//client.println("Content-type:text/html");
+//client.println("Connection: close");
+//client.println();
+//client.println("<!DOCTYPE html><html>");
+//client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
+//client.println("<link rel=\"icon\" href=\"data:,\">");
+//client.println("</style></head><body><h1>ESP32 Web Server BMP180</h1>");
+//client.println("<h2>BMP180 Barometic sensor</h2>");
+//client.println("<table><tr><th>MEASUREMENT</th><th>VALUE</th></tr>");
+//client.println("<tr><td>Temp. Celsius</td><td><span class=\"sensor\">");
+//client.println(bmp.readTemperature());
+//client.println(" *C</span></td></tr>"); 
+//client.println("<tr><td>Pressure</td><td><span class=\"sensor\">");
+//client.println(bmp.readPressure());
+//client.println(" pa</span></td></tr>"); 
+//client.println("<tr><td>Altitude</td><td><span class=\"sensor\">");
+//client.println(bmp.readAltitude());
+//client.println(" meters</span></td></tr>");
+//client.println(" <script> window.setInterval('refresh()', 1000)");    // Call a function every 10000 milliseconds // (OR 10 seconds).  // Refresh or reload page.
+//   
+//
+//   
+//   client.println ("function refresh() {");
+//    client.println   (" window .location.reload();"); 
+//      
+//client.println("} </script>");
+//client.println("</body></html>"); 
+//client.println();
+//Serial.println("Client disconnected.");
+//Serial.println("");
+//}
+//}
+
