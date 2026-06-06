@@ -1,0 +1,88 @@
+/* Modified by Harshith 
+ *  on 27 may 2020
+ *  for project purpose 
+ */
+#include <Wire.h>
+#include <Adafruit_BMP085.h>
+#include <Arduino.h>
+#include <OLED_SSD1306_Chart.h>
+#include <Adafruit_I2CDevice.h> //Include this to avoid compile errors in Platformio
+Adafruit_BMP085 bmp;
+
+float catch_pressure_sensor_value =0;
+
+
+//String header;
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+#define OLED_RESET -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define BAUDRATE 9600
+#define SDA_PIN D1
+#define SCL_PIN D2
+
+OLED_SSD1306_Chart display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+char actualThickness;
+
+
+
+void setup()  
+{
+Serial.begin(9600);
+if (!bmp.begin()) 
+{
+Serial.println("Not connected with BMP180/BMP085 sensor, check connections ");
+while (1) {}
+}
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3c);
+  display.clearDisplay();
+  display.setChartCoordinates(0, 60);      //Chart lower left coordinates (X, Y)
+  display.setChartWidthAndHeight(123, 55); //Chart width = 123 and height = 60
+  display.setXIncrement(5);                //Distance between Y points will be 5px
+
+  display.setYLimits(100000,100999);  //  this is importanat it decides the limit of graph here pressure sesor value is 6 digit so start graph with 6 digit and end at 6 digit
+  display.setYLimitLabels("T", "P");    //Setting Y axis labels
+  display.setYLabelsVisible(true);
+  display.setAxisDivisionsInc(12, 6);    //Each 12 px a division will be painted in X axis and each 6px in Y axis
+  display.setPlotMode(SINGLE_PLOT_MODE); //Set single plot mode
+  // display.setPointGeometry(POINT_GEOMETRY_CIRCLE);
+  actualThickness = NORMAL_LINE;
+  display.setLineThickness(actualThickness);
+  display.drawChart(); //Update the buffer to draw the cartesian chart
+  display.display();
+}
+
+
+
+void loop()
+{
+catch_pressure_sensor_value=bmp.readPressure();  //  catch_pressure_sensor_value stores pressure valve
+Serial.print("Temp = ");
+Serial.print(bmp.readTemperature());
+Serial.println(" *C");
+Serial.print("Pressure = ");
+Serial.print(bmp.readPressure());
+Serial.println(" Pa");
+delay(100);
+delay(10);
+
+  
+  //auto value =   bmp.readPressure() ;         //random(49666);   auto  is they do not need datatype declaration
+  Serial.println( catch_pressure_sensor_value);
+  if (!display.updateChart(catch_pressure_sensor_value)) //Value between Ymin and Ymax will be added to chart
+  {
+    display.clearDisplay(); //If chart is full, it is drawn again
+    if (actualThickness == NORMAL_LINE)
+    {
+      actualThickness = LIGHT_LINE;
+    }
+    else if (actualThickness == LIGHT_LINE)
+    {
+      actualThickness = NORMAL_LINE;
+    }
+    display.setLineThickness(actualThickness);
+    display.drawChart();
+  }
+  delay(100);
+}
+
