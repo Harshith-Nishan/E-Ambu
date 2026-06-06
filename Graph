@@ -1,7 +1,4 @@
-/* Modified by Harshith 
- *  on 27 may 2020
- *  for project purpose 
- */
+
 #include <Wire.h>
 #include <Adafruit_BMP085.h>
 #include <Arduino.h>
